@@ -1,0 +1,74 @@
+*&---------------------------------------------------------------------*
+*& Include          ZDASH_A149_S01
+*&---------------------------------------------------------------------*
+
+TABLES: vbak, kna1, vbfa, likp, vbrk.
+
+TYPES: begin of vbak_adap_ty,
+  VBELN_VBAK type vbak-vbeln,
+  ERDAT_VBAK type vbak-erdat,
+  ERNAM_VBAK type vbak-ernam,
+  NETWR_VBAK type vbak-netwr,
+  WAERK_VBAK type vbak-waerk,
+  VKORG_VBAK type vbak-vkorg,
+  VTWEG_VBAK type vbak-vtweg,
+  SPART_VBAK type vbak-spart,
+  GBSTK_VBAK type vbak-gbstk,
+  KUNNR_VBAK type vbak-kunnr,
+  end of vbak_adap_ty.
+
+TYPES: begin of kna1_adap_ty,
+  NAME1_KNA1 type kna1-name1,
+  KUNNR_KNA1 type kna1-kunnr,
+  end of kna1_adap_ty.
+
+TYPES: begin of likp_adap_ty,
+  VBELN_LIKP type likp-vbeln,
+  ERDAT_LIKP type likp-erdat,
+  VSTEL_LIKP type likp-vstel,
+  BTGEW_LIKP type likp-btgew,
+  GEWEI_LIKP type likp-gewei,
+  end of likp_adap_ty.
+
+TYPES: begin of vbrk_adap_ty,
+  VBELN_VBRK type vbrk-vbeln,
+  FKDAT_VBRK type vbrk-fkdat,
+  MWSBK_VBRK type vbrk-mwsbk,
+  FKSTO_VBRK type vbrk-fksto,
+  end of vbrk_adap_ty.
+
+TYPES: begin of fluxo_ty,
+  VBELN_VBAK type vbak-vbeln,
+  ERDAT_VBAK type vbak-erdat,
+  ERNAM_VBAK type vbak-ernam,
+  NETWR_VBAK type vbak-netwr,
+  WAERK_VBAK type vbak-waerk,
+  VKORG_VBAK type vbak-vkorg,
+  VTWEG_VBAK type vbak-vtweg,
+  SPART_VBAK  type vbak-spart,
+  GBSTK_VBAK  type vbak-gbstk,
+  KUNNR_VBAK  type vbak-kunnr,
+  NAME1_KNA1 type kna1-name1,
+  VBELN_LIKP type likp-vbeln,
+  ERDAT_LIKP type likp-erdat,
+  VSTEL_LIKP type likp-vstel,
+  BTGEW_LIKP type likp-btgew,
+  GEWEI_LIKP type likp-gewei,
+  VBELN_VBRK type vbrk-vbeln,
+  FKDAT_VBRK type vbrk-fkdat,
+  MWSBK_VBRK type vbrk-mwsbk,
+  FKSTO_VBRK type vbrk-fksto,
+  end of fluxo_ty.
+
+DATA: gt_vbak_adap type standard table of vbak_adap_ty with header line,
+      gt_kna1_adap type standard table of kna1_adap_ty with header line,
+      gt_likp_adap type standard table of likp_adap_ty with header line,
+      gt_vbrk_adap type standard table of vbrk_adap_ty with header line,
+      gt_fluxo type standard table of fluxo_ty.
+
+selection-screen begin of block b1.
+  select-options: s_cli for kna1-kunnr,
+                  s_ordem for vbak-vbeln,
+                  s_ship for likp-vbeln,
+                  s_bill for vbrk-vbeln.
+ selection-screen end of block b1.

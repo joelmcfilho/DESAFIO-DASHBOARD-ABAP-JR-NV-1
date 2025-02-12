@@ -1,0 +1,114 @@
+*&---------------------------------------------------------------------*
+*& Include          ZDASH_A149_F01
+*&---------------------------------------------------------------------*
+
+DATA: go_alv TYPE REF TO cl_salv_table.
+
+FORM f_read_data.
+  " Seleção de dados da tabela VBAK com filtros
+    SELECT vbeln erdat ernam netwr waerk vkorg vtweg spart gbstk kunnr
+      FROM vbak
+      INTO TABLE gt_vbak_adap
+      WHERE vbeln IN s_ordem
+        AND kunnr IN s_cli.
+
+
+  " Seleção de dados da tabela KNA1 com FOR ALL ENTRIES
+    SELECT name1 kunnr
+      FROM kna1
+      INTO TABLE gt_kna1_adap
+      FOR ALL ENTRIES IN gt_vbak_adap
+      WHERE kunnr = gt_vbak_adap-kunnr_vbak.
+
+
+  " Seleção de dados da tabela LIKP com filtros
+    SELECT vbeln erdat vstel btgew gewei
+      FROM likp
+      INTO TABLE gt_likp_adap
+      WHERE vbeln IN s_ship.
+
+
+  " Seleção de dados da tabela VBRK com filtros
+    SELECT vbeln fkdat mwsbk fksto
+      FROM vbrk
+      INTO TABLE gt_vbrk_adap
+      WHERE vbeln IN s_bill.
+ENDFORM.
+
+FORM f_write_data.
+  DATA: ls_vbak  TYPE vbak_adap_ty,
+        ls_kna1  TYPE kna1_adap_ty,
+        ls_likp  TYPE likp_adap_ty,
+        ls_vbrk  TYPE vbrk_adap_ty,
+        lt_vbfa_ordem_remessa TYPE TABLE OF vbfa,
+        lt_vbfa_remessa_fatura TYPE TABLE OF vbfa,
+        ls_vbfa  TYPE vbfa,
+        ls_fluxo TYPE fluxo_ty.
+
+
+  " Selecionar fluxo de ordem para remessa
+    SELECT * FROM vbfa INTO TABLE lt_vbfa_ordem_remessa
+      FOR ALL ENTRIES IN gt_vbak_adap
+      WHERE vbelv = gt_vbak_adap-vbeln_vbak
+        AND vbtyp_v = 'C' " Ordem de venda
+        AND vbtyp_n = 'J'. " Remessa
+
+
+  " Selecionar fluxo de remessa para fatura
+    SELECT * FROM vbfa INTO TABLE lt_vbfa_remessa_fatura
+      FOR ALL ENTRIES IN lt_vbfa_ordem_remessa
+      WHERE vbelv = lt_vbfa_ordem_remessa-vbeln
+        AND vbtyp_v = 'J' " Remessa
+        AND vbtyp_n = 'M'. " Fatura
+
+
+  " Processar dados
+  LOOP AT gt_vbak_adap INTO ls_vbak.
+    " Buscar cliente
+    READ TABLE gt_kna1_adap INTO ls_kna1
+      WITH KEY kunnr_kna1 = ls_vbak-kunnr_vbak.
+
+    " Buscar remessas relacionadas à ordem
+    LOOP AT lt_vbfa_ordem_remessa INTO ls_vbfa WHERE vbelv = ls_vbak-vbeln_vbak.
+      " Buscar dados da remessa (LIKP)
+      READ TABLE gt_likp_adap INTO ls_likp
+        WITH KEY vbeln_likp = ls_vbfa-vbeln.
+
+      " Buscar faturas relacionadas à remessa
+      LOOP AT lt_vbfa_remessa_fatura INTO ls_vbfa WHERE vbelv = ls_likp-vbeln_likp.
+        " Buscar dados da fatura (VBRK)
+        READ TABLE gt_vbrk_adap INTO ls_vbrk
+          WITH KEY vbeln_vbrk = ls_vbfa-vbeln.
+
+        " Montar linha do relatório
+        CLEAR ls_fluxo.
+        MOVE-CORRESPONDING ls_vbak TO ls_fluxo.
+        MOVE-CORRESPONDING ls_kna1 TO ls_fluxo.
+        MOVE-CORRESPONDING ls_likp TO ls_fluxo.
+        MOVE-CORRESPONDING ls_vbrk TO ls_fluxo.
+        APPEND ls_fluxo TO gt_fluxo.
+      ENDLOOP. " Fatura
+    ENDLOOP. " Remessa
+  ENDLOOP. " Ordem de venda
+
+  " Verificar se há dados para exibir
+  IF gt_fluxo IS INITIAL.
+    MESSAGE 'Nenhum dado foi selecionado' TYPE 'E'.
+    EXIT.
+  ENDIF.
+ENDFORM.
+
+FORM f_display_alv.
+  TRY.
+      " Exibir relatório ALV
+      cl_salv_table=>factory(
+        IMPORTING
+          r_salv_table = go_alv
+        CHANGING
+          t_table = gt_fluxo
+      ).
+      go_alv->display( ).
+    CATCH cx_salv_msg.
+      MESSAGE 'Erro ao exibir ALV' TYPE 'E'.
+  ENDTRY.
+ENDFORM.
